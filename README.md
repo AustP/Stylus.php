@@ -28,3 +28,13 @@ already parsed Stylus files.
 This means that you could include this code on every page and you won't be parsing your Stylus files every time.
 But make sure that you set `overwrite` to `true` when you are developing or updating your Stylus files so the
 changes will be reflected in your site.
+
+##Current Features
+
++ Omit braces
++ Omit colons
++ Omit semi-colons
++ Custom functions (basic)
++ Importing other files
++ '&' parent reference
++ Mixins
