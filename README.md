@@ -34,7 +34,8 @@ changes will be reflected in your site.
 + Omit braces
 + Omit colons
 + Omit semi-colons
-+ Custom functions (basic)
++ Custom functions
 + Importing other files
 + '&' parent reference
 + Mixins
++ Interpolation
