@@ -254,10 +254,11 @@ class Stylus {
 		if(!$this->read_dir) StylusException::report('No read directory specified');
 		if(!$this->write_dir) StylusException::report('No write directory specified');
 	
-		$this->functions = array();
-		$this->file = '';
 		$dir_handle = opendir($this->read_dir) or StylusException::report('Could not open directory '.$this->read_dir);
 		while(false !== ($file = readdir($dir_handle))){
+			$this->functions = array();
+			$this->blocks = array();
+			$this->file = '';
 			if($file == '.' || $file == '..') continue;
 			elseif(preg_match('~.styl$~', $file)){
 				$filename = $this->read_dir.'/'.$file;
