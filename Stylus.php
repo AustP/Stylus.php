@@ -261,8 +261,10 @@ class Stylus {
 			$this->file = '';
 			if($file == '.' || $file == '..') continue;
 			elseif(preg_match('~.styl$~', $file)){
-				$filename = $this->read_dir.'/'.$file;
+				$writename = $this->write_dir.'/'.preg_replace('~.styl$~', '.css', $file);
+				if(file_exists($writename) && !$overwrite) continue;
 				
+				$filename = $this->read_dir.'/'.$file;
 				$file_handle = fopen($filename, 'r') or StylusException::report('Could not open '.$filename);
 				$contents = fread($file_handle, filesize($filename)) or StylusException::report('Could not read '.$filename);
 				
@@ -282,8 +284,6 @@ class Stylus {
 				$this->convertBlocksToCSS();
 				if(!$this->file) continue;
 				
-				$writename = $this->write_dir.'/'.preg_replace('~.styl$~', '.css', $file);
-				if(file_exists($writename) && !$overwrite) continue;
 				$file_handle = fopen($writename, 'w') or StylusException::report('Could not open '.$writename);
 				fwrite($file_handle, $this->file) or StylusException::report('Could not write to '.$writename);
 				fclose($file_handle);
