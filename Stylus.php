@@ -115,18 +115,25 @@ class Stylus {
 	/*
 	 * call - calls user defined function
 	 */
-	private function call($name, $arguments){
+	private function call($name, $arguments, $parent_args=null){
 		$function = $this->functions[$name];
 		$output = '';
 		foreach($function['contents'] as $i=>$line){
+			preg_match('~^([^:\s(]+):?\s*\(?\s*([^);]+)\)?;?\s*$~', $line, $matches);
+			$prop = $matches[1];
+			$args = $matches[2];
+			if(isset($this->functions[$prop]) && $prop != $name){
+				return $this->call($prop, $args, $arguments);
+			}
 			if($function['args']){
 				$user_args = preg_split('~,\s*~', $arguments);
 				foreach($user_args as $j=>$args){
-					$line = preg_replace('~\b'.$function['args'][$j].'\b~', $args, $line);
+					$line = preg_replace('~(\b'.$function['args'][$j].'\b)|(\{'.$function['args'][$j].'\})~', $args, $line);
 				}
 			}
 			if($i) $output .= PHP_EOL."\t";
-			$output .= preg_replace('~^([^: ]+):? ([^;]+);?$~', '$1: $2;', preg_replace('~arguments~', $arguments, $line));
+			if($parent_args) $output .= preg_replace('~^([^: ]+):? ([^;]+);?$~', '$1: $2;', preg_replace('~arguments~', $parent_args, $line));
+			else $output .= preg_replace('~^([^: ]+):? ([^;]+);?$~', '$1: $2;', preg_replace('~arguments~', $arguments, $line));
 		}
 		return $output;
 	}
@@ -259,6 +266,7 @@ class Stylus {
 			$this->functions = array();
 			$this->blocks = array();
 			$this->file = '';
+			
 			if($file == '.' || $file == '..') continue;
 			elseif(preg_match('~.styl$~', $file)){
 				$writename = $this->write_dir.'/'.preg_replace('~.styl$~', '.css', $file);
