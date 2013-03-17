@@ -66,11 +66,11 @@ class Stylus {
 	 */
 	private function isBlockDeclaration($lines, $i, $indent=''){
 		$line = $lines[$i];
-		if(preg_match('~^[a-zA-Z0-9.#*][^(]+$~', $line))
+		if(preg_match('~^[a-zA-Z0-9.#*][^(]+((?<=:not)|$)~', $line))
 			return true;
-		elseif(preg_match('~^'.$indent.'[a-zA-Z0-9.#&\[\]=\'"]+,?$~', $line))
+		elseif(preg_match('~^'.$indent.'[a-zA-Z0-9.#*+&\[\]=\'">\~\^\$\-]+,?$~', $line))
 			return true;
-		elseif(preg_match('~^'.$indent.'[a-zA-Z0-9.#&\[\]=\'" ,]+,$~', $line))
+		elseif(preg_match('~^'.$indent.'[a-zA-Z0-9.#*+&\[\]=\'">\~\^\$\- ,]+,$~', $line))
 			return true;
 		elseif(preg_match('~^'.$indent.'&~', $line))
 			return true;
@@ -128,6 +128,7 @@ class Stylus {
 			if($function['args']){
 				$user_args = preg_split('~,\s*~', $arguments);
 				foreach($user_args as $j=>$args){
+					$args = preg_replace('~^([\'"]?)([^\1]+)(\1)$~', '$2', $args);
 					$line = preg_replace('~(\b'.$function['args'][$j].'\b)|(\{'.$function['args'][$j].'\})~', $args, $line);
 				}
 			}
