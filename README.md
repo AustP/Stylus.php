@@ -39,3 +39,24 @@ changes will be reflected in your site.
 + '&' parent reference
 + Mixins
 + Interpolation
++ Variables
+ 
+##Assigning Variables
+Assigning variables is done the same way as in regular Stylus. But you now have the option of adding variables
+from PHP before parsing the stylus files by calling the `assign` function. Here is an example:
+
+**PHP**
+
+    $stylus->assign('px_size', '30px');
+    $stylus->parseFiles();
+    
+**Stylus**
+
+    div
+     font-size px_size
+
+**Yields**
+
+    div {
+        font-size: 30px;
+    }
