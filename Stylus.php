@@ -18,8 +18,8 @@ class StylusException extends Exception {
 }
 
 class Stylus {
-	private $read_dir, $write_dir, $import_dir, $file='', $functions=array(), $blocks=array();
-	
+	private $read_dir, $write_dir, $import_dir, $file, $functions, $blocks, $vars;
+
 	/*
 	 * setReadDir - sets the directory to read from
 	 */
@@ -27,7 +27,7 @@ class Stylus {
 		if(is_dir($dir)) $this->read_dir = $dir;
 		else throw new StylusException($dir.' is not a directory.');
 	}
-	
+
 	/*
 	 * setWriteDir - sets the directory to write to
 	 */
@@ -35,7 +35,7 @@ class Stylus {
 		if(is_dir($dir)) $this->write_dir = $dir;
 		else throw new StylusException($dir.' is not a directory.');
 	}
-	
+
 	/*
 	 * setImportDir - sets the directory to import from
 	 */
@@ -43,14 +43,21 @@ class Stylus {
 		if(is_dir($dir)) $this->import_dir = $dir;
 		else throw new StylusException($dir.' is not a directory.');
 	}
-	
+
+	/*
+	 * assign - assigns a variable to be used in the css
+	 */
+	public function assign($name, $value){
+		$this->vars[$name] = $value;
+	}
+
 	/*
 	 * isIndented - sees if the line is indented
 	 */
 	private function isIndented($line){
 		return preg_match('~^\s~', $line);
 	}
-	
+
 	/*
 	 * getIndent - returns the indent of the line
 	 */
@@ -60,9 +67,9 @@ class Stylus {
 		else
 			return '';
 	}
-	
+
 	/*
-	 * isBlockDeclaration - sees if the line is a block declaration
+	 * isBlockDeclaration - sees if the line looks like a block declaration
 	 */
 	private function isBlockDeclaration($lines, $i, $indent=''){
 		$line = $lines[$i];
@@ -81,37 +88,42 @@ class Stylus {
 		else
 			return false;
 	}
-	
+
 	/*
-	 * isNotBlockDeclaration - sees if the line is not a block declaration
+	 * isProperty - sees if the line looks like a property
 	 */
-	private function isNotBlockDeclaration($line){
-		if(preg_match('~^[a-zA-Z0-9.#*][^(]+$~', $line))
-			return false;
-		elseif(preg_match('~^\s+[a-zA-Z0-9.#\[\]=\'"]+,?$~', $line))
-			return false;
-		elseif(preg_match('~^\s+[a-zA-Z0-9.#\[\]=\'" ,]+,$~', $line))
-			return false;
-		elseif(preg_match('~^\s+&~', $line))
-			return false;
-		else
-			return true;
+	private function isProperty($line){
+		return preg_match('~\S\s\S~', $line);
 	}
-	
+
 	/*
-	 * isFunctionDeclaration - sees if the line is a function declaration
+	 * isVariableDeclaration - sees if the line looks like a variable declaration
+	 */
+	private function isVariableDeclaration($lines, $i){
+		$line = $lines[$i];
+		if(preg_match('~^[\$a-zA-Z0-9_-]+\s*=\s*\S~', $line)
+		&& isset($lines[$i+1])
+		&& $this->getIndent($lines[$i+1]) === $this->getIndent($line)){
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	/*
+	 * isFunctionDeclaration - sees if the line looks like a function declaration
 	 */
 	private function isFunctionDeclaration($line){
-		return preg_match('~^[a-zA-Z0-9_-]+\s*\(~', $line);
+		return preg_match('~^[\$a-zA-Z0-9_-]+\s*\(~', $line);
 	}
-	
+
 	/*
 	 * isImport - sees if the line is importing a file
 	 */
 	private function isImport($line){
 		return preg_match('~^@import~', $line);
 	}
-	
+
 	/*
 	 * call - calls user defined function
 	 */
@@ -119,11 +131,12 @@ class Stylus {
 		$function = $this->functions[$name];
 		$output = '';
 		foreach($function['contents'] as $i=>$line){
-			preg_match('~^([^:\s(]+):?\s*\(?\s*([^);]+)\)?;?\s*$~', $line, $matches);
-			$prop = $matches[1];
-			$args = $matches[2];
-			if(isset($this->functions[$prop]) && $prop != $name){
-				return $this->call($prop, $args, $arguments);
+			if(preg_match('~^([^:\s(]+):?\s*\(?\s*([^);]+)\)?;?\s*$~', $line, $matches)){
+				$prop = $matches[1];
+				$args = $matches[2];
+				if(isset($this->functions[$prop]) && $prop != $name){
+					return $this->call($prop, $args, $arguments);
+				}
 			}
 			if($function['args']){
 				$user_args = preg_split('~,\s*~', $arguments);
@@ -138,21 +151,32 @@ class Stylus {
 		}
 		return $output;
 	}
-	
+
 	/*
 	 * parseLine - parses line by calling function if it is or formatting it into CSS
 	 */
 	private function parseLine($line){
-		preg_match('~^\s+([^:\s(]+):?\s*\(?\s*([^);]+)\)?;?\s*$~', $line, $matches);
+		preg_match('~^\s*([^:\s(]+):?\s*\(?\s*([^);]+)\)?;?\s*$~', $line, $matches);
 		$name = $matches[1];
 		$args = $matches[2];
 		if(isset($this->functions[$name])){
 			return $this->call($name, $args);
 		}else{
+			if(preg_match('~[,\s]~', $args)){
+				preg_match_all('~(\$|\b)[\$a-zA-Z0-9_-]+(\$|\b)~', $args, $matches);
+				foreach($matches[0] as $arg){
+					if(isset($this->vars[$arg])){
+						$reg = str_replace('$', '\\$', $arg);
+						$args = preg_replace('~((?<=^|[^\$a-zA-Z0-9_-])'.$reg.'(?=$|[^\$a-zA-Z0-9_-]))|(\{'.$reg.'\})~', $this->vars[$arg], $args);
+					}
+				}
+			}elseif(isset($this->vars[$args])){
+				$args = $this->vars[$args];
+			}
 			return $name.': '.$args.';';
 		}
 	}
-	
+
 	/*
 	 * addBlock - adds block of css code
 	 */
@@ -166,7 +190,7 @@ class Stylus {
 			$block['names'] = array_merge($block['names'], preg_split('~,\s?~', preg_replace('~\s*{\s*$~', '', trim($lines[$i])), null, PREG_SPLIT_NO_EMPTY));
 			$i++;
 		}
-		
+
 		if($parent_names){
 			$names = array();
 			foreach($block['names'] as $block_name){
@@ -182,15 +206,15 @@ class Stylus {
 			}
 			$block['names'] = $names;
 		}
-		
+
 		$indent = $this->getIndent($lines[$i]);
-		
+
 		//loop over block content and shape the block
 		while(isset($lines[$i]) && $this->getIndent($lines[$i]) === $indent){
 			$line = $lines[$i];
 			if($this->isBlockDeclaration($lines, $i, $indent)){
 				$this->addBlock($lines, $i, $indent, $block['names']);
-			}elseif($this->isNotBlockDeclaration($line)){
+			}elseif($this->isProperty($line)){
 				$block['contents'][] = $this->parseLine($line);
 			}else{
 				break;
@@ -198,10 +222,10 @@ class Stylus {
 			$i++;
 		}
 		$i--;
-		
+
 		$this->blocks[$position] = $block;
 	}
-	
+
 	/*
 	 * addFunction - adds user defined function
 	 */
@@ -216,7 +240,17 @@ class Stylus {
 		$i--;
 		$this->functions[$name] = $function;
 	}
-	
+
+	/*
+	 * addVariable - adds user defined variable
+	 */
+	private function addVariable($line){
+		preg_match('~^([\$a-zA-Z0-9_-]+)\s*=\s*([^;]+);?$~', $line, $matches);
+		$name = $matches[1];
+		$value = preg_replace('~(^[^=]+=\s*)|;~', '', $this->parseLine($line));
+		$this->assign($name, $value);
+	}
+
 	/*
 	 * import - imports the specified file
 	 */
@@ -235,7 +269,7 @@ class Stylus {
 		$lines = array_merge(array_values(array_filter(preg_replace('~^\s*}\s*$~', '', preg_split('~\r\n|\n|\r~', $contents)), 'strlen')), $lines);
 		$i--;
 	}
-	
+
 	/*
 	 * convertBlocksToCSS - converts blocks of CSS to actual CSS
 	 */
@@ -254,34 +288,32 @@ class Stylus {
 			$this->file .= PHP_EOL .'}' . PHP_EOL;
 		}
 	}
-	
+
 	/*
 	 * parseFiles - reads .styl files, parses them, writes .css files
 	 */
 	public function parseFiles($overwrite = false){
 		if(!$this->read_dir) StylusException::report('No read directory specified');
 		if(!$this->write_dir) StylusException::report('No write directory specified');
-	
+
 		$dir_handle = opendir($this->read_dir) or StylusException::report('Could not open directory '.$this->read_dir);
 		while(false !== ($file = readdir($dir_handle))){
-			$this->functions = array();
-			$this->blocks = array();
-			$this->file = '';
-			
 			if($file == '.' || $file == '..') continue;
 			elseif(preg_match('~.styl$~', $file)){
 				$writename = $this->write_dir.'/'.preg_replace('~.styl$~', '.css', $file);
 				if(file_exists($writename) && !$overwrite) continue;
-				
+
 				$filename = $this->read_dir.'/'.$file;
 				$file_handle = fopen($filename, 'r') or StylusException::report('Could not open '.$filename);
 				$contents = fread($file_handle, filesize($filename)) or StylusException::report('Could not read '.$filename);
-				
+
 				$lines = array_values(array_filter(preg_replace('~^\s*}\s*$~', '', preg_split('~\r\n|\n|\r~', $contents)), 'strlen'));
 				for($i=0; $i<count($lines); $i++){
 					$line = $lines[$i];
 					if($this->isFunctionDeclaration($line))
 						$this->addFunction($lines, $i);
+					elseif($this->isVariableDeclaration($lines, $i))
+						$this->addVariable($line);
 					elseif($this->isBlockDeclaration($lines, $i))
 						$this->addBlock($lines, $i);
 					elseif($this->isImport($line)){
@@ -289,14 +321,19 @@ class Stylus {
 					}
 				}
 				fclose($file_handle);
-				
+
 				$this->convertBlocksToCSS();
 				if(!$this->file) continue;
-				
+
 				$file_handle = fopen($writename, 'w') or StylusException::report('Could not open '.$writename);
 				fwrite($file_handle, $this->file) or StylusException::report('Could not write to '.$writename);
 				fclose($file_handle);
 			}
+			
+			$this->functions = array();
+			$this->blocks = array();
+			$this->vars = array();
+			$this->file = '';
 		}
 		closedir($dir_handle);
 	}
