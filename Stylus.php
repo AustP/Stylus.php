@@ -125,12 +125,38 @@ class Stylus {
 	}
 
 	/*
+	 * insertVariables - inserts variables into the arguments or line if there are any
+	 */
+	private function insertVariables($args, $line=false){
+		if($line){
+			preg_match('~^(\S+\s+)(.*)$~', $args, $matches);
+			return $matches[1].$this->insertVariables($matches[2]);
+		}else{
+			if(preg_match('~[,\s]~', $args)){
+				preg_match_all('~(\$|\b)[\$a-zA-Z0-9_-]+(\$|\b)~', $args, $matches);
+				foreach($matches[0] as $arg){
+					if(isset($this->vars[$arg])){
+						$reg = str_replace('$', '\\$', $arg);
+						$args = preg_replace('~((?<=^|[^\$a-zA-Z0-9_-])'.$reg.'(?=$|[^\$a-zA-Z0-9_-]))|(\{'.$reg.'\})~', $this->vars[$arg], $args);
+					}
+				}
+			}elseif(isset($this->vars[$args])){
+				$args = $this->vars[$args];
+			}
+			
+			return $args;
+		}
+	}
+
+	/*
 	 * call - calls user defined function
 	 */
 	private function call($name, $arguments, $parent_args=null){
 		$function = $this->functions[$name];
 		$output = '';
 		foreach($function['contents'] as $i=>$line){
+			$line = $this->insertVariables($line, true);
+			
 			if(preg_match('~^([^:\s(]+):?\s*\(?\s*([^);]+)\)?;?\s*$~', $line, $matches)){
 				$prop = $matches[1];
 				$args = $matches[2];
@@ -162,17 +188,8 @@ class Stylus {
 		if(isset($this->functions[$name])){
 			return $this->call($name, $args);
 		}else{
-			if(preg_match('~[,\s]~', $args)){
-				preg_match_all('~(\$|\b)[\$a-zA-Z0-9_-]+(\$|\b)~', $args, $matches);
-				foreach($matches[0] as $arg){
-					if(isset($this->vars[$arg])){
-						$reg = str_replace('$', '\\$', $arg);
-						$args = preg_replace('~((?<=^|[^\$a-zA-Z0-9_-])'.$reg.'(?=$|[^\$a-zA-Z0-9_-]))|(\{'.$reg.'\})~', $this->vars[$arg], $args);
-					}
-				}
-			}elseif(isset($this->vars[$args])){
-				$args = $this->vars[$args];
-			}
+			$args = $this->insertVariables($args);
+			
 			return $name.': '.$args.';';
 		}
 	}
@@ -183,9 +200,7 @@ class Stylus {
 	private function addBlock($lines, &$i, $indent='', $parent_names=array()){
 		$position = count($this->blocks);
 		$this->blocks[$position] = 'placeholder';
-		$block = array();
-		//loop back to get other names of this block
-		$block['names'] = array();
+		$block = array('names'=>array(), 'contents'=>array());
 		while(isset($lines[$i]) && $indent === $this->getIndent($lines[$i])){
 			$block['names'] = array_merge($block['names'], preg_split('~,\s?~', preg_replace('~\s*{\s*$~', '', trim($lines[$i])), null, PREG_SPLIT_NO_EMPTY));
 			$i++;
@@ -209,7 +224,6 @@ class Stylus {
 
 		$indent = $this->getIndent($lines[$i]);
 
-		//loop over block content and shape the block
 		while(isset($lines[$i]) && $this->getIndent($lines[$i]) === $indent){
 			$line = $lines[$i];
 			if($this->isBlockDeclaration($lines, $i, $indent)){
