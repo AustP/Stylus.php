@@ -10,6 +10,18 @@ into my nodejs application. When I started my next project, which was a PHP proj
 that I wanted to implement it into my PHP project as well. Surprisingly, I couldn't find any Stylus parser for PHP.
 So I did as any developer would do and created my own. And I want to share it.
 
+##Current Features
+
++ Omit braces
++ Omit colons
++ Omit semi-colons
++ Custom functions
++ Importing other files
++ '&' parent reference
++ Mixins
++ Interpolation
++ Variables
+
 ##Using Stylus.php
 Using Stylus.php is really easy! Just include the following code:
 
@@ -29,17 +41,13 @@ This means that you could include this code on every page and you won't be parsi
 But make sure that you set `overwrite` to `true` when you are developing or updating your Stylus files so the
 changes will be reflected in your site.
 
-##Current Features
+###Parse a Single File
+It is possible to only parse one file. Instead of calling `parseFiles()` you simply just call `parseFile('my_styl')`.
+`parseFile()`'s second parameter is the `overwrite` flag. If you wanted to parse a file on every page load but didn't
+want to parse every file you could use this to do so.
 
-+ Omit braces
-+ Omit colons
-+ Omit semi-colons
-+ Custom functions
-+ Importing other files
-+ '&' parent reference
-+ Mixins
-+ Interpolation
-+ Variables
+    $stylus->parseFile('my_file', true);
+    $stylus->parseFiles();
  
 ##Assigning Variables
 Assigning variables is done the same way as in regular Stylus. But you now have the option of adding variables
