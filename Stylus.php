@@ -302,52 +302,61 @@ class Stylus {
 			$this->file .= PHP_EOL .'}' . PHP_EOL;
 		}
 	}
+	
+	/*
+	 * parseFile - reads specific .styl file, parses it, and writes it as .css
+	 */
+	public function parseFile($file, $overwrite=false){
+		if(!$this->read_dir) StylusException::report('No read directory specified');
+		if(!$this->write_dir) StylusException::report('No write directory specified');
+		
+		if(preg_match('~(\.styl$)|(^[^\.]+$)~', $file)){
+			$file = preg_replace('~(\.styl)+$~', '.styl', $file.'.styl');
+			$writename = $this->write_dir.'/'.preg_replace('~\.styl$~', '.css', $file);
+			if(file_exists($writename) && !$overwrite) return;
+
+			$filename = $this->read_dir.'/'.$file;
+			$file_handle = fopen($filename, 'r') or StylusException::report('Could not open '.$filename);
+			$contents = fread($file_handle, filesize($filename)) or StylusException::report('Could not read '.$filename);
+
+			$lines = array_values(array_filter(preg_replace('~^\s*}\s*$~', '', preg_split('~\r\n|\n|\r~', $contents)), 'strlen'));
+			for($i=0; $i<count($lines); $i++){
+				$line = $lines[$i];
+				if($this->isFunctionDeclaration($line))
+					$this->addFunction($lines, $i);
+				elseif($this->isVariableDeclaration($lines, $i))
+					$this->addVariable($line);
+				elseif($this->isBlockDeclaration($lines, $i))
+					$this->addBlock($lines, $i);
+				elseif($this->isImport($line)){
+					$this->import($lines, $i);
+				}
+			}
+			fclose($file_handle);
+
+			$this->convertBlocksToCSS();
+			if($this->file){
+				$file_handle = fopen($writename, 'w') or StylusException::report('Could not open '.$writename);
+				fwrite($file_handle, $this->file) or StylusException::report('Could not write to '.$writename);
+				fclose($file_handle);
+			}
+		}
+		$this->functions = array();
+		$this->blocks = array();
+		$this->vars = array();
+		$this->file = '';
+	}
 
 	/*
 	 * parseFiles - reads .styl files, parses them, writes .css files
 	 */
-	public function parseFiles($overwrite = false){
+	public function parseFiles($overwrite=false){
 		if(!$this->read_dir) StylusException::report('No read directory specified');
 		if(!$this->write_dir) StylusException::report('No write directory specified');
 
 		$dir_handle = opendir($this->read_dir) or StylusException::report('Could not open directory '.$this->read_dir);
 		while(false !== ($file = readdir($dir_handle))){
-			if($file == '.' || $file == '..') continue;
-			elseif(preg_match('~.styl$~', $file)){
-				$writename = $this->write_dir.'/'.preg_replace('~.styl$~', '.css', $file);
-				if(file_exists($writename) && !$overwrite) continue;
-
-				$filename = $this->read_dir.'/'.$file;
-				$file_handle = fopen($filename, 'r') or StylusException::report('Could not open '.$filename);
-				$contents = fread($file_handle, filesize($filename)) or StylusException::report('Could not read '.$filename);
-
-				$lines = array_values(array_filter(preg_replace('~^\s*}\s*$~', '', preg_split('~\r\n|\n|\r~', $contents)), 'strlen'));
-				for($i=0; $i<count($lines); $i++){
-					$line = $lines[$i];
-					if($this->isFunctionDeclaration($line))
-						$this->addFunction($lines, $i);
-					elseif($this->isVariableDeclaration($lines, $i))
-						$this->addVariable($line);
-					elseif($this->isBlockDeclaration($lines, $i))
-						$this->addBlock($lines, $i);
-					elseif($this->isImport($line)){
-						$this->import($lines, $i);
-					}
-				}
-				fclose($file_handle);
-
-				$this->convertBlocksToCSS();
-				if(!$this->file) continue;
-
-				$file_handle = fopen($writename, 'w') or StylusException::report('Could not open '.$writename);
-				fwrite($file_handle, $this->file) or StylusException::report('Could not write to '.$writename);
-				fclose($file_handle);
-			}
-			
-			$this->functions = array();
-			$this->blocks = array();
-			$this->vars = array();
-			$this->file = '';
+			if(is_file($this->read_dir.'/'.$file))$this->parseFile($file, $overwrite);
 		}
 		closedir($dir_handle);
 	}
