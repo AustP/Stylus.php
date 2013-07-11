@@ -182,10 +182,11 @@ class Stylus {
 	 * parseLine - parses line by calling function if it is or formatting it into CSS
 	 */
 	private function parseLine($line){
-		preg_match('~^\s*([^:\s(]+):?\s*\(?\s*([^);]+)\)?;?\s*$~', $line, $matches);
+		preg_match('~^\s*([^:\s\(]+)\s*:?\s*([^;]+);?\s*$~', $line, $matches);
 		$name = $matches[1];
 		$args = $matches[2];
 		if(isset($this->functions[$name])){
+			$args = str_replace(array('(', ')'), '', $args);
 			return $this->call($name, $args);
 		}else{
 			$args = $this->insertVariables($args);
