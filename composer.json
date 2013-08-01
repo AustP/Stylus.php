@@ -1,0 +1,26 @@
+{
+    "name": "neemzy/stylus",
+    "description": "Stylus preprocessor for PHP",
+
+    "authors": [
+        {
+            "name": "AustP"
+        },
+        {
+            "name": "neemzy",
+            "email": "tom.panier@beseen.fr"
+        }
+    ],
+
+    "require": {
+        "php": ">=5.3.0"
+    },
+
+    "autoload": {
+        "psr-0": {
+            "Stylus": "src/"
+        }
+    },
+
+    "minimum-stability": "dev"
+}
