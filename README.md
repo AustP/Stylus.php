@@ -5,7 +5,7 @@ A Stylus parser for PHP
 <hr>
 ###CSS needs a hero... again
 
-When I first saw <a href="learnboost.github.com/stylus/">Stylus</a> I thought it was amazing and I implemented it
+When I first saw <a href="http://learnboost.github.com/stylus/">Stylus</a> I thought it was amazing and I implemented it
 into my nodejs application. When I started my next project, which was a PHP project, I liked Stylus so much
 that I wanted to implement it into my PHP project as well. Surprisingly, I couldn't find any Stylus parser for PHP.
 So I did as any developer would do and created my own. And I want to share it.
