@@ -445,10 +445,6 @@ class Stylus
 
     public function parseFile($file, $overwrite = false)
     {
-        if (! $this->read_dir) {
-            StylusException::report('No read directory specified');
-        }
-
         if (! $this->write_dir) {
             StylusException::report('No write directory specified');
         }
@@ -461,23 +457,12 @@ class Stylus
                 return;
             }
 
-            $filename = $this->read_dir.'/'.$file;
-            $file_handle = fopen($filename, 'r') or StylusException::report('Could not open '.$filename);
-            $contents = fread($file_handle, filesize($filename)) or StylusException::report('Could not read '.$filename);
-
-            $output = $this->render($contents);
+            $output = $this->parseFileToString($file);
 
             if ($output) {
-                $file_handle = fopen($writename, 'w') or StylusException::report('Could not open '.$writename);
-                fwrite($file_handle, $output) or StylusException::report('Could not write to '.$writename);
-                fclose($file_handle);
+                file_put_contents($writename, $output) or StylusException::report('Could not write to '.$writename);
             }
         }
-
-        $this->functions = array();
-        $this->blocks = array();
-        $this->vars = array();
-        $this->file = '';
     }
 
     /*
@@ -492,12 +477,9 @@ class Stylus
 
         if (preg_match('~(\.styl$)|(^[^\.]+$)~', $file)) {
             $file = preg_replace('~(\.styl)+$~', '.styl', $file.'.styl');
+            $input = file_get_contents($this->read_dir.'/'.$file) or StylusException::report('Could not read from '.$writename);
 
-            $filename = $this->read_dir.'/'.$file;
-            $file_handle = fopen($filename, 'r') or StylusException::report('Could not open '.$filename);
-            $contents = fread($file_handle, filesize($filename)) or StylusException::report('Could not read '.$filename);
-
-            return $this->render($contents);
+            return $this->render($input);
         }
 
         return null;
