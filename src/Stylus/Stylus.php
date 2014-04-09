@@ -293,14 +293,22 @@ class Stylus {
             $extension = $matches[2];
         }
 
-        $dir = $this->import_dir? $this->import_dir: $this->read_dir;
-        $path = $dir.'/'.$name.$extension;
-        $file_handle = fopen($path, 'r') or StylusException::report('Could not open '.$path);
-        $contents = fread($file_handle, filesize($path)) or StylusException::report('Could not read '.$path);
-        fclose($file_handle);
-        unset($lines[$i]);
-        $lines = array_merge(array_values(array_filter(preg_replace('~^\s*}\s*$~', '', preg_split('~\r\n|\n|\r~', $contents)), 'strlen')), $lines);
-        $i--;
+        $dir = $this->import_dir ? $this->import_dir : $this->read_dir;
+        $path = $dir . '/' . $name . $extension;
+        $contents = file_get_contents($path);
+
+        if ($contents === false) {
+            StylusException::report('Could not read ' . $path);
+        }
+
+        if ($extension === '.styl') {
+            unset($lines[$i]);
+            $lines = array_merge(array_values(array_filter(preg_replace('~^\s*}\s*$~', '', preg_split('~\r\n|\n|\r~', $contents)), 'strlen')), $lines);
+            $i--;
+        } else {
+            $this->file .= PHP_EOL . $contents . PHP_EOL;
+        }
+
     }
 
     /*
