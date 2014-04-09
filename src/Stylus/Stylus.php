@@ -386,10 +386,10 @@ class Stylus {
             StylusException::report('No read directory specified');
         }
 
-        $this->input = (object) [
+        $this->input = (object) array(
             "type" => "file",
             "value" => $file
-        ];
+        );
 
         return $this;
     }
@@ -399,10 +399,10 @@ class Stylus {
      */
     public function fromString($string) {
 
-        $this->input = (object) [
+        $this->input = (object) array(
             "type" => "string",
             "value" => $string
-        ];
+        );
 
         return $this;
     }
