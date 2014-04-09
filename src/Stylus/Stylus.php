@@ -28,10 +28,7 @@ class Stylus {
     protected $functions;
     protected $blocks;
     protected $vars;
-
-    protected $writename;
     protected $input;
-    protected $output;
 
     /*
      * setReadDir - sets the directory to read from
