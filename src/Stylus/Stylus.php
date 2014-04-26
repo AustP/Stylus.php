@@ -399,6 +399,38 @@ class Stylus
         }
     }
     
+    /**
+     * parse - parses stylus code and returns css
+     *
+     * @author exside
+     */
+    public function parse($input)
+    {        
+        $this->functions = array();
+        $this->blocks = array();
+        $this->vars = array();
+        $this->file = '';
+
+        $lines = array_values(array_filter(preg_replace('~^\s*}\s*$~', '', preg_split('~\r\n|\n|\r~', $input)), 'strlen'));
+
+        for ($i=0; $i<count($lines); $i++) {
+            $line = $lines[$i];
+
+            if ($this->isFunctionDeclaration($line)) {
+                $this->addFunction($lines, $i);
+            } else if ($this->isVariableDeclaration($lines, $i)) {
+                $this->addVariable($line);
+            } else if ($this->isBlockDeclaration($lines, $i)) {
+                $this->addBlock($lines, $i);
+            } else if ($this->isImport($line)) {
+                $this->import($lines, $i);
+            }
+        }
+
+        $this->convertBlocksToCSS();
+
+        return $this->file;
+    }
 
 
     /*
@@ -426,24 +458,10 @@ class Stylus
             $filename = $this->read_dir.'/'.$file;
             $file_handle = fopen($filename, 'r') or StylusException::report('Could not open '.$filename);
             $contents = fread($file_handle, filesize($filename)) or StylusException::report('Could not read '.$filename);
-            $lines = array_values(array_filter(preg_replace('~^\s*}\s*$~', '', preg_split('~\r\n|\n|\r~', $contents)), 'strlen'));
-
-            for ($i=0; $i<count($lines); $i++) {
-                $line = $lines[$i];
-
-                if ($this->isFunctionDeclaration($line)) {
-                    $this->addFunction($lines, $i);
-                } else if ($this->isVariableDeclaration($lines, $i)) {
-                    $this->addVariable($line);
-                } else if ($this->isBlockDeclaration($lines, $i)) {
-                    $this->addBlock($lines, $i);
-                } else if ($this->isImport($line)) {
-                    $this->import($lines, $i);
-                }
-            }
+            
+            $this->parse($contents);
 
             fclose($file_handle);
-            $this->convertBlocksToCSS();
 
             if ($this->file) {
                 $file_handle = fopen($writename, 'w') or StylusException::report('Could not open '.$writename);
@@ -451,13 +469,7 @@ class Stylus
                 fclose($file_handle);
             }
         }
-
-        $this->functions = array();
-        $this->blocks = array();
-        $this->vars = array();
-        $this->file = '';
     }
-
 
 
     /*
