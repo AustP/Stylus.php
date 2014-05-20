@@ -1,0 +1,10 @@
+html {
+	background: white;
+	color: red;
+}
+html p {
+	text-decoration: blink;
+}
+html h1 {
+	font-size: 192pt;
+}
