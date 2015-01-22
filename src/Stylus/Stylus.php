@@ -223,9 +223,7 @@ class Stylus {
 
             foreach ($block['names'] as $block_name) {
                 foreach ($parent_names as $parent_name) {
-                    if (preg_match('~^[.#:]~', $block_name)) {
-                        $names[] = $parent_name.$block_name;
-                    } else if (preg_match('~&~', $block_name)) {
+                    if (preg_match('~&~', $block_name)) {
                         $names[] = preg_replace('~&~', $parent_name, $block_name);
                     } else {
                         $names[] = $parent_name.' '.$block_name;
