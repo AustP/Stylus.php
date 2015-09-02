@@ -101,7 +101,7 @@ class Stylus {
      * isProperty - sees if the line looks like a property
      */
     protected function isProperty($line) {
-        return preg_match('~\S\s\S~', $line);
+        return preg_match('~\S[\s:]\S~', $line);
     }
 
     /*
