@@ -22,6 +22,42 @@ class StylusTest extends \PHPUnit_Framework_TestCase {
 
     }
 
+    function testBlockParseColonNoSpace(){
+
+        $stylus = new Stylus();
+
+        $in = "body\n  color:black";
+        $out = $stylus->fromString($in)->toString();
+
+        $correct = "body {\n\tcolor: black;\n}\n";
+
+        $this->assertEquals($correct, $out);
+    }
+
+    function testBlockParseColonWithSpace(){
+
+        $stylus = new Stylus();
+
+        $in = "body\n  color: black";
+        $out = $stylus->fromString($in)->toString();
+
+        $correct = "body {\n\tcolor: black;\n}\n";
+
+        $this->assertEquals($correct, $out);
+    }
+
+    function testBlockParseSpaceWithColon(){
+
+        $stylus = new Stylus();
+
+        $in = "body\n  color :black";
+        $out = $stylus->fromString($in)->toString();
+
+        $correct = "body {\n\tcolor: black;\n}\n";
+
+        $this->assertEquals($correct, $out);
+    }
+
     function testRenderingFromFile() {
 
         $stylus = new Stylus();
