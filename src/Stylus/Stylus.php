@@ -139,7 +139,7 @@ class Stylus {
 
                 foreach ($matches[0] as $arg) {
                     if (isset($this->vars[$arg])) {
-                        $reg = str_replace('$', '\\$', $arg);
+                        $reg = preg_quote($arg);
                         $args = preg_replace('~((?<=^|[^\$a-zA-Z0-9_-])'.$reg.'(?=$|[^\$a-zA-Z0-9_-]))|(\{'.$reg.'\})~', $this->vars[$arg], $args);
                     }
                 }
