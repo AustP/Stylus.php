@@ -109,7 +109,15 @@ class Stylus {
      */
     protected function isVariableDeclaration($lines, $i) {
         $line = $lines[$i];
-        return (preg_match('~^[\$a-zA-Z0-9_-]+\s*=\s*\S~', $line) && isset($lines[$i+1]) && $this->getIndent($lines[$i+1]) === $this->getIndent($line));
+
+        return (
+            preg_match('~^[a-zA-Z0-9.#*][^(]+((?<=:not)|$)~', $line) ||
+            preg_match('~^'.$indent.'[a-zA-Z0-9.#*+&\[\]=\'">\~\^\$\-]+,?$~', $line) ||
+            preg_match('~^'.$indent.'[a-zA-Z0-9.#*+&\[\]=\'">\~\^\$\- ,]+,$~', $line) ||
+            preg_match('~^'.$indent.'&~', $line) ||
+            (isset($lines[$i+1]) && $this->getIndent($lines[$i+1]) > $this->getIndent($line)) ||
+            preg_match('~{~', $line)
+        );
     }
 
     /*
@@ -123,7 +131,14 @@ class Stylus {
      * isImport - sees if the line is importing a file
      */
     protected function isImport($line) {
-        return preg_match('~^@import~', $line);
+        return strpos($line, '@import') === 0;
+    }
+
+    /*
+     * isAtRule - sees if the line is an at-rule
+     */
+    protected function isAtRule($line) {
+        return strpos($line, '@') === 0;
     }
 
     /*
@@ -310,6 +325,23 @@ class Stylus {
     }
 
     /*
+     * at-rule
+     */
+    protected function atRule(&$lines, &$i) {
+        $this->file .= $lines[$i].' {'.PHP_EOL;
+        $code = '';
+        while (isset($lines[$i + 1]) && preg_match('~^\s~', $lines[$i + 1])) {
+            $code .= $lines[$i + 1] . "\n";
+            $i++;
+        }
+        $stylus = new self();
+
+        $stylus->setReadDir($this->read_dir);
+        $this->file .= preg_replace('~\r\n|\r|\n~', "$0\t", "\t".trim($stylus->fromString($code)->toString()));
+        $this->file .= PHP_EOL.'}'.PHP_EOL;
+    }
+
+    /*
      * convertBlocksToCSS - converts blocks of CSS to actual CSS
      */
     protected function convertBlocksToCSS() {
@@ -361,10 +393,12 @@ class Stylus {
                 $this->addFunction($lines, $i);
             } else if ($this->isVariableDeclaration($lines, $i)) {
                 $this->addVariable($line);
-            } else if ($this->isBlockDeclaration($lines, $i)) {
-                $this->addBlock($lines, $i);
             } else if ($this->isImport($line)) {
                 $this->import($lines, $i);
+            } else if ($this->isAtRule($line)) {
+                $this->atRule($lines, $i);
+            } else if ($this->isBlockDeclaration($lines, $i)) {
+                $this->addBlock($lines, $i);
             }
         }
 
