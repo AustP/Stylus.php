@@ -18,7 +18,7 @@ class StylusTest extends \PHPUnit_Framework_TestCase {
 
         $correct = "body {\n\tcolor: black;\n}\n";
 
-        $this->assertEquals($correct, $out);
+        $this->assertEquals(str_replace("\r", '', $correct), str_replace("\r", '', $out));
 
     }
 
@@ -31,7 +31,7 @@ class StylusTest extends \PHPUnit_Framework_TestCase {
 
         $correct = "body {\n\tcolor: black;\n}\n";
 
-        $this->assertEquals($correct, $out);
+        $this->assertEquals(str_replace("\r", '', $correct), str_replace("\r", '', $out));
     }
 
     function testBlockParseColonWithSpace(){
@@ -43,7 +43,7 @@ class StylusTest extends \PHPUnit_Framework_TestCase {
 
         $correct = "body {\n\tcolor: black;\n}\n";
 
-        $this->assertEquals($correct, $out);
+        $this->assertEquals(str_replace("\r", '', $correct), str_replace("\r", '', $out));
     }
 
     function testBlockParseSpaceWithColon(){
@@ -55,7 +55,7 @@ class StylusTest extends \PHPUnit_Framework_TestCase {
 
         $correct = "body {\n\tcolor: black;\n}\n";
 
-        $this->assertEquals($correct, $out);
+        $this->assertEquals(str_replace("\r", '', $correct), str_replace("\r", '', $out));
     }
 
     function testRenderingFromFile() {
@@ -68,6 +68,21 @@ class StylusTest extends \PHPUnit_Framework_TestCase {
         $out = $stylus->fromFile($in)->toString();
 
         $correct = file_get_contents('tests/data/test.css');
+
+        $this->assertEquals($correct, $out);
+
+    }
+
+    function testAnimationsRenderingFromFile() {
+
+        $stylus = new Stylus();
+
+        $stylus->setReadDir('tests/data');
+
+        $in = 'animations.styl';
+        $out = $stylus->fromFile($in)->toString();
+
+        $correct = file_get_contents('tests/data/animations.css');
 
         $this->assertEquals($correct, $out);
 
