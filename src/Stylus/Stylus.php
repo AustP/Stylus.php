@@ -336,7 +336,9 @@ class Stylus {
         }
         $stylus = new self();
 
-        $stylus->setReadDir($this->read_dir);
+        if ($this->read_dir) {
+            $stylus->setReadDir($this->read_dir);
+        }
         $this->file .= preg_replace('~\r\n|\r|\n~', "$0\t", "\t".trim($stylus->fromString($code)->toString()));
         $this->file .= PHP_EOL.'}'.PHP_EOL;
     }
